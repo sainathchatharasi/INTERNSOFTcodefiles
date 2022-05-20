@@ -1,0 +1,138 @@
+import speech_recognition as sr
+import pyttsx3
+import pywhatkit
+import datetime
+import wikipedia
+import time
+import webbrowser
+import os
+import subprocess
+from ecapture import ecapture as ec
+import json
+import requests
+import pyjokes
+import wolframalpha
+from cv2 import *
+
+listener = sr.Recognizer()
+engine = pyttsx3.init()
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[1].id)
+
+
+def talk(text):
+    engine.say(text)
+    engine.runAndWait()
+def wishme():
+    hour = datetime.datetime.now().hour
+    if 0 <= hour < 12:
+        talk("Hello,Good Morning Sir")
+        print("Hello,Good Morning Sir")
+    elif 12 <= hour < 18:
+        talk("Hello,Good Afternoon Sir")
+        print("Hello,Good Afternoon Sir")
+    else:
+        talk("Hello,Good Night Sir")
+        print("Hello,Good Night Sir")
+
+
+def take_command():
+    try:
+        with sr.Microphone() as source:
+            print('listening...')
+            voice = listener.listen(source)
+            command = listener.recognize_google(voice)
+            print(f"user said:{command}\n")
+            command = command.lower()
+            if 'sam' in command:
+                command = command.replace('sam', '')
+                print(command)
+    except:
+        pass
+    return command
+print("Loading your AI personal assistant Sam")
+talk("Loading your AI personal assistant Sam")
+wishme()
+
+def run_alexa():
+    command = take_command()
+    print(command)
+    if 'play' in command:
+        song = command.replace('play', '')
+        talk('playing ' + song)
+        pywhatkit.playonyt(song)
+    elif "good bye" in command or "ok bye" in command or "stop" in command:
+        talk("Ok , your pc will log off in 10 sec make sure you exit from all applications")
+        subprocess.call(["shutdown", "/l"])
+    elif 'time' in command:
+        time = datetime.datetime.now().strftime('%I:%M %p')
+        print('Current time is ' + time)
+        talk('Current time is ' + time)
+    elif 'wikipedia' in command:
+        talk('Searching Wikipedia...')
+        statement = command.replace("wikipedia", "")
+        results = wikipedia.summary(command, sentences=3)
+        talk("According to Wikipedia")
+        print(results)
+        talk(results)
+    elif 'open google' in command:
+        webbrowser.open_new_tab("https://www.google.com")
+        talk("Google chrome is opened for you now")
+    elif 'open gmail' in command:
+        webbrowser.open_new_tab("gmail.com")
+        talk("Your Google Mail is open now")
+    elif 'search' in command:
+        statement = command.replace("search", "")
+        webbrowser.open_new_tab(statement)
+    elif "camera" in command or "take a photo" in command:
+        ec.capture(0, "robo camera", "img.jpg")
+    elif "weather" in command:
+        api_key = "8ef61edcf1c576d65d836254e11ea420"
+        base_url = "https://api.openweathermap.org/data/2.5/weather?"
+        talk("whats the city name")
+        city_name = take_command()
+        complete_url = base_url + "appid=" + api_key + "&q=" + city_name
+        response = requests.get(complete_url)
+        x = response.json()
+        if x["cod"] != "404":
+            y = x["main"]
+            current_temperature = y["temp"]
+            current_humidity = y["humidity"]
+            z = x["weather"]
+            weather_description = z[0]["description"]
+            talk(" Temperature in kelvin unit is " +
+                  str(current_temperature) +
+                  "\n humidity in percentage is " +
+                  str(current_humidity) +
+                  "\n description  " +
+                  str(weather_description))
+            print(" Temperature in kelvin unit = " +
+                  str(current_temperature) +
+                  "\n humidity (in percentage) = " +
+                  str(current_humidity) +
+                  "\n description = " +
+                  str(weather_description))
+        elif 'ask' in command:
+            talk('I can answer to computational and geographical questions  and what question do you want to ask now')
+            question = take_command()
+            app_id = "V3XYV8-VXT2W732QX"
+            client = wolframalpha.Client('V3XYV8-VXT2W732QX')
+            res = client.query(question)
+            answer = next(res.results).text
+            talk(answer)
+            print(answer)
+        else:
+            talk("city not found")
+            print("city not found")
+    elif 'date' in command:
+        talk('sorry, I have a headache')
+    elif 'are you single' in command:
+        talk('I am in a relationship with wifi')
+    elif 'joke' in command:
+        talk(pyjokes.get_joke())
+    else:
+        talk('Please say the command again.')
+
+
+while True:
+    run_alexa()
